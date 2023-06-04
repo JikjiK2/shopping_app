@@ -48,7 +48,7 @@ export default function MaterialBottomTabsScreen() {
       />
       <MaterialBottomTabs.Screen
         name="TabContacts"
-        component={BoardScreen}
+        component={RegisterScreen}
         options={{
           tabBarLabel: 'MyPage',
           tabBarIcon: 'contacts',

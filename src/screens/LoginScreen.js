@@ -3,6 +3,7 @@ import React from 'react'
 import Colors from '../styles/colors'
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
+
 function LoginScreen({navigation}) {
   return (
     <Box flex={1} bg={Colors.white}>
@@ -49,7 +50,7 @@ function LoginScreen({navigation}) {
           my={30} 
           w="40%" 
           rounded={50} 
-                
+          onPress={() => navigation.navigate("Main")}
         >
           로그인
         </Button>
