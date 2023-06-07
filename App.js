@@ -24,6 +24,9 @@ const Stack = createNativeStackNavigator()
 
 import TestScreen from "./src/screens/TestScreen";
 import BoardScreen from "./src/screens/BoardScreen";
+import IdResultScreen from "./src/screens/IdResultScreen";
+import IdSearchScreen from "./src/screens/IdSearchScreen";
+import PwSearchScreen from "./src/screens/PwSearchScreen";
 
 
 
@@ -46,10 +49,15 @@ export default function App() {
             <Stack.Screen name="Board" component={BoardScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Single" component={SingleProductScreen} />
+            <Stack.Screen name="ID_Search" component={IdSearchScreen} />
+            <Stack.Screen name="PW_Search" component={PwSearchScreen} />
+            
           </Stack.Navigator>
         </NavigationContainer>
-      </NativeBaseProvider>
 
+        
+      </NativeBaseProvider>
+      
     </>
   );
 

@@ -55,7 +55,7 @@ function MainScreen({ navigation }) {
 
         </HStack>
       </HStack>
-      <SildeImage />
+      {/* <SildeImage /> */}
       <NativeBaseProvider>
         <Center margin="10">
           <VStack space="3">
