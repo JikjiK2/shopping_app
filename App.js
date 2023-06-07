@@ -22,19 +22,20 @@ import { isConstTypeReference } from "typescript";
 
 const Stack = createNativeStackNavigator()
 
-import TestScreen from "./src/screens/TestScreen";
+import TestScreen from "./src/screens/BottomNavi";
 import BoardScreen from "./src/screens/BoardScreen";
 import IdResultScreen from "./src/screens/IdResultScreen";
 import IdSearchScreen from "./src/screens/IdSearchScreen";
 import PwSearchScreen from "./src/screens/PwSearchScreen";
-
+import Bottom_Navi from "./src/screens/BottomNavi";
+import ProductRegisterScreen from "./src/screens/ProductRegisterScreen";
 
 
 export default function App() {
   return (
     <>
       <NativeBaseProvider>
-        <NavigationContainer>
+        {/* <NavigationContainer>
           <StatusBar hidden={true} />
           <Stack.Navigator
             initialRouteName="Login"
@@ -51,10 +52,11 @@ export default function App() {
             <Stack.Screen name="Single" component={SingleProductScreen} />
             <Stack.Screen name="ID_Search" component={IdSearchScreen} />
             <Stack.Screen name="PW_Search" component={PwSearchScreen} />
-            
+            <Stack.Screen name="Bottom_Navi" component={Bottom_Navi} />
+            <Stack.Screen name="ID_Result" component={IdResultScreen} />
           </Stack.Navigator>
-        </NavigationContainer>
-
+        </NavigationContainer> */}
+        <ProductRegisterScreen/>
         
       </NativeBaseProvider>
       

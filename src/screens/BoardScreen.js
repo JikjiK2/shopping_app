@@ -1,10 +1,12 @@
-import React from 'react'
+import React,  { useState, useEffect }from 'react'
+import { View, StyleSheet, SafeAreaView, FlatList, Image,  ActivityIndicator } from 'react-native';
 import { Flex, Spacer, Icon, StatusBar, IconButton, Badge, Box, Center,
-   HStack, NativeBaseProvider, Pressable, ScrollView, Text, View, VStack, Image } from 'native-base'
+   HStack, NativeBaseProvider, Pressable, ScrollView, VStack, Text, } from 'native-base'
 import { MaterialIcons } from "@expo/vector-icons";
 import Colors from "../styles/colors"
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { Dimensions, useWindowDimensions } from "react-native"
+
 
 
 const windowWidth = Dimensions.get('window').width;
@@ -32,7 +34,6 @@ function AppBar() {
     </HStack>
   </>
 }
-
 function review({navigation}) {
   return (
     <Center margin="4">
@@ -184,7 +185,6 @@ function review({navigation}) {
     </Center>
   )
 }
-
 function twohand() {
   return (
     <View>
@@ -248,7 +248,6 @@ function free() {
     </Center>
   )
 }
-
 function TopTap() { 
   return (
     <topTap.Navigator swipeEnabled={false}>
@@ -258,22 +257,101 @@ function TopTap() {
     </topTap.Navigator>
   );
 }
-var abc = "상의";
+
 function BoardScreen({navigation}) {
+
+  const [data, setData] = useState([]);
+  const [isLoading, setisLoading] = useState(true);
+
+  useEffect(() => {
+    getListPhotos();
+    return () => {
+      
+    }
+  }, [])
+
+  getListPhotos = () => {
+    const apiURL = "https://jsonplaceholder.typicode.com/photos";
+    fetch(apiURL)
+    .then((res) => res.json())
+    .then((resJson) => {
+      setData(resJson)
+    }).catch((error) =>{
+      console.log("Request Api Error: ", error);
+    }).finally(() => setisLoading(false));
+  }
+
+  renderItem = ({item, index}) => {
+    return(
+      <View style={styles.itme}>
+        <Image 
+          style={styles.image}
+          source={{uri:itme.url}}
+          resizeMode='contain'
+        />
+        <View style={styles.wrapText}>
+          <Text style={styles.fontSize}>{index + '. ' + item.title}</Text>
+        </View>
+        
+      </View>
+    )
+  }
+
+  
+
   return (
     <NativeBaseProvider>
-      <View bg={Colors.main} flexDirection="row" justifyContent="space-between">        
-          <IconButton icon={<Icon as={MaterialIcons} name="keyboard-backspace" size="7" color="white" />}
-            onPress={() => navigation.pop()} />           
-          {/* <IconButton icon={<Icon as={MaterialIcons} name="logout" size="7" color="white" alignSelf="flex-end" />}
-            onPress={() => navigation.navigate("Login")} />          */}
-      </View>
-      <Text textAlign="center" fontSize={20}>{abc} 경매 게시판</Text>
-      <TopTap />
-
+    <StatusBar/>
+      <Box safeAreaTop bg="violet.600" />
+      <HStack bg={Colors.main} px="1" py="4" justifyContent="center" alignItems="center" w="100%">
+        <HStack alignItems="center">
+        {/* <IconButton icon={<Icon as={MaterialIcons} name="keyboard-backspace" size="7" color="white" />}
+            onPress={() => navigation.pop()} />  */}
+          
+          <Text color="white" fontSize="20" fontWeight="bold">
+            경매 목록
+          </Text>
+        </HStack>
+      </HStack>    
+      
+      
+      <SafeAreaView style={styles.container}>
+      {isLoading ? <ActivityIndicator/> : (
+        <FlatList>
+            data={data}
+            keyExtractor={item => `key-${item.id}`}
+            renderItem={renderItem}
+        </FlatList>
+      )}
+        
+      </SafeAreaView>
+      
+    
+    
+      
+   
 
     </NativeBaseProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  container:{
+    flex:1
+  },
+  fontSize: {
+    fontSize: 18
+  },
+  wrapText: {
+    flex:1,
+    marginLeft:10,
+    justifyContent: 'center'
+  },
+  item: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    boradeRadius: 10
+  }
+})
 
 export default BoardScreen

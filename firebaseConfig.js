@@ -1,3 +1,4 @@
+/*
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
@@ -7,6 +8,16 @@ import "firebase/compat/database"
 import "firebase/compat/storage"
 import "firebase/compat/firestore"
 import firebase from "firebase/compat/app"
+*/
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import "firebase/compat/database"
+import "firebase/compat/storage"
+import "firebase/compat/firestore"
+import firebase from "firebase/compat/app"
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 // 내꺼
@@ -33,22 +44,15 @@ const firebaseConfig = {
   measurementId: "G-K29BP5YM2T"
 };
 // Initialize Firebase
+/*
 if (!firebase.apps.length) {
-   firebase.initializeApp(firebaseConfig);
- }
+  firebase.initializeApp(firebaseConfig);
+}
+*/
 
- const app = firebase.initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
+const firestore = getFirestore(app);
+const auth = getAuth(app);
 
-//  const firestore = getFirestore(app);
-//  const auth = getAuth(app);
 
-// export default auth;
-//Realtime
-//const firebase_db = firebase.database();
-
-//FireStore
-//const firebase_db = firebase.firestore();
-
-//Storage
-// const firebase_db = getStorage(firebase);
-// export default firebase_db;
+export { firestore, auth };

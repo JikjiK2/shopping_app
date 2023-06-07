@@ -2,7 +2,8 @@ import React from 'react'
 import { Text, View, Icon, IconButton, Box, Heading, VStack, Button } from 'native-base'
 import { MaterialIcons } from "@expo/vector-icons";
 
-function IdResultScreen({navigation}) {
+function IdResultScreen({route, navigation}) {
+   const { foundID } = route.params;
    return (
       <>
          
@@ -16,12 +17,12 @@ function IdResultScreen({navigation}) {
                justifyContent="center"
                alignItems="center"
             >
-               <Heading>아이디 ... 입니다</Heading>
+               <Heading>아이디 {foundID[0]} 입니다</Heading>
                <Box h={5}/>
                <Button
                      w="40%"
                      rounded={5}
-                     onPress={() =>{}}
+                     onPress={() => navigation.navigate("Login")}
                   >
                      로그인
                   </Button>
@@ -29,7 +30,7 @@ function IdResultScreen({navigation}) {
                   <Button
                      w="40%"
                      rounded={5}
-                     onPress={() =>{}}
+                     onPress={() => navigation.navigate("PW_Search")}
                   >비밀번호 찾기</Button>
 
             </Box>

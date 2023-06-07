@@ -7,21 +7,23 @@ import LoginScreen from './LoginScreen';
 import MainScreen from './MainScreen';
 import RegisterScreen from './RegisterScreen';
 import { NavigationContainer } from '@react-navigation/native';
+import ProfileScreen from './ProfileScreen';
+import test from './test';
 
 
 
 const MaterialBottomTabs =
   createMaterialBottomTabNavigator();
 
-export default function MaterialBottomTabsScreen() {
+export default function Bottom_Navi() {
   return (
-    <NavigationContainer>
+    
     <MaterialBottomTabs.Navigator barStyle={styles.tabBar}>
       <MaterialBottomTabs.Screen
         name="TabStack"
-        component={MainScreen}
+        component={BoardScreen}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: '경매',
           tabBarIcon: 'home',
           tabBarColor: '#C9E7F8',
         }}
@@ -31,31 +33,22 @@ export default function MaterialBottomTabsScreen() {
         name="TabChat"
         component={BoardScreen}
         options={{
-          tabBarLabel: 'Community',
+          tabBarLabel: '내 목록',
           tabBarIcon: 'message-reply',
           tabBarColor: '#9FD5C9',
           //tabBarBadge: true,
         }}
-      />      
-      <MaterialBottomTabs.Screen
-        name="TabAlbums"
-        component={LoginScreen}
-        options={{
-          tabBarLabel: 'Favorite',
-          tabBarIcon: 'heart',
-          tabBarColor: '#FAD4D6',
-        }}
-      />
+      />    
       <MaterialBottomTabs.Screen
         name="TabContacts"
-        component={RegisterScreen}
+        component={ProfileScreen}
         options={{
-          tabBarLabel: 'MyPage',
+          tabBarLabel: '프로필',
           tabBarIcon: 'contacts',
           tabBarColor: '#F7EAA2',
         }}
       />
-    </MaterialBottomTabs.Navigator></NavigationContainer>
+    </MaterialBottomTabs.Navigator>
   );
 }
 

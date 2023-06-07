@@ -1,20 +1,26 @@
-import {
-  View,
-  Button,
-  Heading,
-  IconButton,
-  Input,  
-  VStack,
-  Icon,
-  Text
-} from "native-base";
-import React from "react";
+import {View,Button,Heading,IconButton,Input,  VStack,Icon,Text} from "native-base";
+import React, { useState } from "react";
 import Colors from "../styles/colors";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Keyboard, TouchableWithoutFeedback } from "react-native";
+import { auth } from "../../firebaseConfig";
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 function PwSearchScreen({ navigation }) {
-  const [text, setText] = React.useState("");
+  const [email, setEmail] = useState("");
+  const [text, setText] = useState("");
+  const handleResetPassword = async () => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      navigation.navigate('Login');
+      //onsole.log('비밀번호 재설정 이메일이 전송되었습니다.');
+      // 여기에서 이메일이 전송되었음을 알리는 알림 또는 화면 전환 등을 수행할 수 있습니다.
+    } catch (error) {
+      //console.error('비밀번호 재설정 이메일 전송 중 오류 발생:', error);
+      // 오류가 발생했을 때 적절한 처리를 수행할 수 있습니다.
+    }
+  };
+
   return (
     <>
       <View bg="white" flexDirection="row" justifyContent="space-between">
@@ -50,8 +56,8 @@ function PwSearchScreen({ navigation }) {
             <VStack space={2} pt="6">
             <Text>이메일</Text>
               <Input
-                value={text}
-                onChangeText={(value) => setText(value)}
+                value={email}
+                onChangeText={(value) => setEmail(value)}
                 InputRightElement={
                   text.length > 0 ? (
                     <IconButton
@@ -62,7 +68,7 @@ function PwSearchScreen({ navigation }) {
                       icon={
                         <MaterialIcons name="close" size={20} color="black" />
                       }
-                      onPress={() => setText("")}
+                      onPress={() => setEmail("")}
                     />
                   ) : null
                 }
@@ -82,7 +88,7 @@ function PwSearchScreen({ navigation }) {
               my={30}
               w="40%"
               rounded={5}
-              onPress={() => navigation.pop()}
+              onPress={handleResetPassword}
             >
               비밀번호 찾기
             </Button>
