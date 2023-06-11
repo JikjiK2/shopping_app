@@ -6,6 +6,14 @@ import { Keyboard, TouchableWithoutFeedback } from "react-native";
 import { auth } from "../../firebaseConfig";
 import { sendPasswordResetEmail } from 'firebase/auth';
 
+
+const emailRegEx = /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/i;
+
+  
+  const emailCheck = (username) => {
+    return emailRegEx.test(username); 
+  }
+
 function PwSearchScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [text, setText] = useState("");
@@ -76,18 +84,21 @@ function PwSearchScreen({ navigation }) {
                 placeholder="이메일"
                 pl={2}
                 w="80%"
+                borderColor= {(email.length == 0 || emailCheck(email) ? "black" : "red.600")}
                 borderWidth={2}
                 _focus={{
                   backgroundColor: "none",
-                  borderColor: "black",
+                  borderColor: email.length == 0 || emailCheck(email) ? "black" : "red.600",
                 }}
               />
+              {email.length == 0 || emailCheck(email) ? null : <Text fontSize={12} color="red.600">이메일 형식이 맞지 않습니다.</Text>}
             </VStack>
-            <Button
-            bg="black"
+            <Button            
               my={30}
               w="40%"
               rounded={5}
+              backgroundColor={ (emailCheck(email)) ? "black" : "gray.400"}
+              disabled={!(emailCheck(email))}
               onPress={handleResetPassword}
             >
               비밀번호 찾기

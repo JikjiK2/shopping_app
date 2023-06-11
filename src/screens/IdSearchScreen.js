@@ -83,7 +83,7 @@ function IdSearchScreen({ navigation }) {
                   onChangeText={(value) => setPhonenumber(value)}
                   keyboardType="numeric"
                   variant="outline"
-                  placeholder="휴대 전화 번호  '-' 없이"
+                  placeholder="'-' 없이"
                   
                   w="70%"
                   borderWidth={2}
@@ -93,11 +93,12 @@ function IdSearchScreen({ navigation }) {
                   }}
                 />
             </VStack>
-            <Button
-            bg="black"
+            <Button            
               my={30}
               w="40%"
               rounded={5}
+              backgroundColor={ (phonenumber.length > 10 && name.length > 0) ? "black" : "gray.400"}
+              disabled={!(phonenumber.length > 10 && name.length > 0)}
               onPress={handleIdSearch}
             >
               아이디 찾기

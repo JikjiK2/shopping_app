@@ -15,7 +15,7 @@ import "firebase/compat/database"
 import "firebase/compat/storage"
 import "firebase/compat/firestore"
 import firebase from "firebase/compat/app"
-import { getFirestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore/lite";
 import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
@@ -30,7 +30,7 @@ import { getAuth } from "firebase/auth";
 //   messagingSenderId: "769362626315",
 //   appId: "1:769362626315:web:4b0c80d6cf146af182440e",
 //   measurementId: "G-1HPKTE7WZT",
-//   
+  
 // };
 // 김창연꺼
 const firebaseConfig = {
@@ -51,8 +51,8 @@ if (!firebase.apps.length) {
 */
 
 const app = firebase.initializeApp(firebaseConfig);
-const firestore = getFirestore(app);
-const auth = getAuth(app);
+const firestore = getFirestore();
+// const auth = getAuth(app);
 
 
-export { firestore, auth };
+export { firestore };

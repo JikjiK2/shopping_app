@@ -1,4 +1,4 @@
-import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
+
 import { NavigatorScreenParams } from '@react-navigation/native';
 import * as React from 'react';
 import { StyleSheet } from 'react-native';
@@ -9,46 +9,74 @@ import RegisterScreen from './RegisterScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import ProfileScreen from './ProfileScreen';
 import test from './test';
+import SetItemsForms from './SetItemsForms';
+import { Ionicons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 
-
-const MaterialBottomTabs =
-  createMaterialBottomTabNavigator();
+const Tab = createBottomTabNavigator();
 
 export default function Bottom_Navi() {
+
+  
+  
+
   return (
-    
-    <MaterialBottomTabs.Navigator barStyle={styles.tabBar}>
-      <MaterialBottomTabs.Screen
-        name="TabStack"
-        component={BoardScreen}
-        options={{
-          tabBarLabel: '경매',
-          tabBarIcon: 'home',
-          tabBarColor: '#C9E7F8',
+    <>
+    <Tab.Navigator     
+      tabBarOptions={{        
+        activeTintColor: "#000000",
+        inactiveTintColor: "#aaaaaa",
+        style:{ 
+          borderTopWidth: 0.5,
+          borderTopColor: "#e9e9e9",
+          backgroundColor: "#ffffff",          
+        },
+        labelStyle:{
+          marginBottom:3,
+          fontSize: 12,
+        }
+      }}      
+    >
+      <Tab.Screen      
+        name="경매"
+        component={SetItemsForms}
+        options={{      
+          headerShown:false,    
+          tabBarLabel:"홈",
+          tabBarIcon: ({focused}) =>
+          focused ? 
+            <Ionicons name="home" size={24} color="black" /> :
+            <Ionicons name="home-outline" size={24} color="#aaaaaa" />
+          
         }}
-      >
-      </MaterialBottomTabs.Screen>
-      <MaterialBottomTabs.Screen
-        name="TabChat"
-        component={BoardScreen}
+      />  
+      <Tab.Screen
+        name="내 목록"
+        component={LoginScreen}
         options={{
-          tabBarLabel: '내 목록',
-          tabBarIcon: 'message-reply',
-          tabBarColor: '#9FD5C9',
-          //tabBarBadge: true,
+          headerShown:false,    
+          tabBarLabel:"내 목록",
+          tabBarIcon: ({focused}) =>
+          focused ? 
+            <Ionicons name="cart" size={24} color="black" /> :
+            <Ionicons name="cart-outline" size={24} color="#aaaaaa" />          
         }}
       />    
-      <MaterialBottomTabs.Screen
-        name="TabContacts"
+      <Tab.Screen
+        name="프로필"
         component={ProfileScreen}
         options={{
-          tabBarLabel: '프로필',
-          tabBarIcon: 'contacts',
-          tabBarColor: '#F7EAA2',
+          headerShown:false,    
+          tabBarLabel:"프로필",
+          tabBarIcon: ({focused}) =>
+          focused ? 
+            <Ionicons name="person" size={24} color="black" /> :
+            <Ionicons name="person-outline" size={24} color="#aaaaaa" />          
         }}
       />
-    </MaterialBottomTabs.Navigator>
+    </Tab.Navigator>
+    </>
   );
 }
 

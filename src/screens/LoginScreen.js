@@ -13,8 +13,20 @@ function LoginScreen({ navigation }) {
   const [errors, setErrors] = React.useState({});
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [bt, setBt] = useState();
   const toast = useToast();
   
+  const emailRegEx = /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/i;
+  const passwordRegEx = /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{8,20}$/
+  
+  const emailCheck = (username) => {
+    return emailRegEx.test(username); 
+  }
+
+  const passwordCheck = (password) => {
+    return passwordRegEx.test(password); 
+  }
+
   const handleClick = () => setShow(!show);
   const validate = () => {
     if (formData.name === undefined) {
@@ -97,14 +109,16 @@ function LoginScreen({ navigation }) {
               }
               variant="outline"
               placeholder="이메일"
+              keyboardType="email-address"
               pl={2}
               w="80%"
               borderWidth={2}
               _focus={{
                 backgroundColor: "none",
-                borderColor: "black",
+                borderColor: (email.length == 0 || emailCheck(email) ? "black" : "red.600"),
               }}
             />
+            {email.length == 0 || emailCheck(email) ? null : <Text fontSize={12} color="red.600">이메일 형식이 맞지 않습니다.</Text>}
             <Text>비밀번호</Text>
             <Input
               InputRightElement={
@@ -123,7 +137,7 @@ function LoginScreen({ navigation }) {
               type={show ? "text" : "password"}
               w="80%"
               py="0"
-              placeholder="비밀번호"
+              placeholder="비밀번호"            
               borderWidth={2}
               value={password}
               onChangeText={(value) => setPassword(value)}
@@ -134,19 +148,12 @@ function LoginScreen({ navigation }) {
             />
 
           </VStack>
-          <Button
-            backgroundColor="black"
+          <Button            
             my={30}
             w="80%"
             rounded={5}
-            /*
-            onPress={() => {
-              toast.show({
-                duration: 2000,
-                description: "Hello world"
-              })
-            }}
-            */
+            backgroundColor={ (email.length > 0 && password.length > 7) ? "black" : "gray.400"}
+            disabled={!(email.length > 0 && password.length > 7)}
             onPress={handleLogin}
           >
             로그인

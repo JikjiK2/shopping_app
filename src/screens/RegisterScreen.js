@@ -1,6 +1,6 @@
 import { Button, Heading, Image, Input, Text, View, VStack, Icon, IconButton, HStack, ScrollView,useToast,toast } from "native-base";
 import React, { useState } from "react";
-import { KeyboardAvoidingView, SafeAreaView, Keyboard, TouchableWithoutFeedback, Dimensions, } from "react-native";
+import { KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Dimensions, } from "react-native";
 import Colors from "../styles/colors";
 import { } from "react-native-gesture-handler";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
@@ -10,36 +10,8 @@ import { registration } from "../../firebaseApi";
 import "firebase/database";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import firebase_db from "../../firebaseConfig";
-/*
-const getImage = async () => {
-  let url = "";
-  try {
-    const fileRef = firebase_db.ref().child("로그인.png");
-    photoURL = await fileRef.getDownloadURL();
-    console.log(photoURL);
-  } catch (e) {
-    console.log(e);
-  }
-};
-function selectDB() {
-  // RealTime
-  // firebase_db.ref('users/').on("value", snapshot => {
-  //   console.log(snapshot)
-  // })
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-  // FireStore
-  const test = firebase_db.collection("test1");
-  test
-    .doc("test_item")
-    .get()
-    .then((doc) => {
-      // document의 데이터를 가져옴
-      console.log(doc.data());
-      // document의 id를 가져옴
-      console.log(doc.id);
-    });
-}
-*/
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
@@ -59,6 +31,16 @@ function RegisterScreen({ navigation }) {
 
   const toast = useToast();
 
+  const emailRegEx = /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/i;
+  const passwordRegEx = /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{8,20}$/
+  
+  const emailCheck = (username) => {
+    return emailRegEx.test(username); 
+  }
+
+  const passwordCheck = (password) => {
+    return passwordRegEx.test(password); 
+  }
 
   const handleClick = () => setShow(!show);
   const handleRegistration = () => {
@@ -93,14 +75,16 @@ function RegisterScreen({ navigation }) {
   };
   return (
     <>
+    <SafeAreaProvider>
+    <SafeAreaView>
       <TouchableWithoutFeedback
         onPress={() => {
-          Keyboard.dismiss();
+          Keyboard.dismiss();          
         }}
-      >
-        <View bg="white">
+      >       
           <ScrollView
             showsVerticalScrollIndicator={false}
+            bg="white"
           >
             <View bg="white" flexDirection="row" alignItems="flex-start">
               <IconButton
@@ -123,7 +107,7 @@ function RegisterScreen({ navigation }) {
                 <Text>이메일</Text>
                 <Input
                   value={email}
-                  onChangeText={(value) => setEmail(value)}
+                  onChangeText={(value) => {setEmail(value); emailCheck(value)}}
                   InputRightElement={
                     text.length > 0 ? (
                       <IconButton
@@ -136,14 +120,15 @@ function RegisterScreen({ navigation }) {
                   }
                   variant="outline"
                   placeholder="이메일 주소"
-
                   w="70%"
                   borderWidth={2}
+                  borderColor= {(email.length == 0 || emailCheck(email) ? "gray.300" : "red.600")}
                   _focus={{
                     backgroundColor: "none",
-                    borderColor: "black",
+                    borderColor: (email.length == 0 || emailCheck(email) ? "black" : "red.600")
                   }}
                 />
+                {email.length == 0 || emailCheck(email) ? null : <Text fontSize={12} color="red.600">이메일 형식이 맞지 않습니다.</Text>}
                 <Text>비밀번호</Text>
                 <Input
                   value={password} // 값 설정
@@ -163,13 +148,18 @@ function RegisterScreen({ navigation }) {
                   type={show ? "text" : "password"}
                   w="70%"
                   py="0"
+                  maxLength={20}
                   placeholder="비밀번호"
+                  borderColor={(password.length == 0 || (passwordCheck(password) && password.length > 7) ? "gray.300" : "red.600")}
                   borderWidth={2}
                   _focus={{
                     backgroundColor: "none",
-                    borderColor: "black",
+                    borderColor: (password.length == 0 || (passwordCheck(password) && password.length > 7) ? "black" : "red.600"),
+                    
                   }}
                 />
+                {password.length == 0 || (passwordCheck(password) && password.length > 7) ? null : <Text fontSize={12} color="red.600">영문, 숫자, 특수문자를 포함한 8-20자리</Text>}
+               
                 <Text>비밀번호 확인</Text>
                 <Input
                   value={confirmPassword} // 값 설정
@@ -191,14 +181,15 @@ function RegisterScreen({ navigation }) {
                   py="0"
                   placeholder="비밀번호 확인"
                   borderWidth={2}
+                  borderColor= {((password == confirmPassword && confirmPassword.length > 7) || confirmPassword == 0  ? "gray.300" : "red.600")}
                   _focus={{
                     backgroundColor: "none",
-                    borderColor: "black",
+                    borderColor: ((password == confirmPassword && confirmPassword.length > 7) || confirmPassword == 0  ? "black" : "red.600"),
                   }}
                 />
-
-                <HStack space={5}>
-                  <VStack>
+                {(confirmPassword.length > 7 && password == confirmPassword) || confirmPassword == 0 ? null : <Text fontSize={12} color="red.600">비밀번호가 일치하지 않습니다.</Text>}
+                <HStack space={5} justifyContent="space-between">
+                  <VStack space={2}>
                     <Text>이름</Text>
                     <Input
                       value={name} // 값 설정
@@ -214,23 +205,25 @@ function RegisterScreen({ navigation }) {
                       }}
                     />
                   </VStack>
-                  <VStack>
+                  <VStack space={2}>
                     <Text>생년월일</Text>
                     <Input
-                      keyboardType="numeric"
+                      keyboardType="numeric"                      
                       value={birthdate} // 값 설정
                       onChangeText={(value) => setBirthdate(value)}
                       variant="outline"
                       placeholder="ex)20230415"
-
+                      maxLength={8}
                       w="140"
                       borderWidth={2}
+                      borderColor={(birthdate.length == 0 || birthdate.length == 8 ? "gray.300" : "red.600")}
                       _focus={{
                         backgroundColor: "none",
-                        borderColor: "black",
+                        borderColor: (birthdate.length == 0 || birthdate.length == 8 ? "black" : "red.600"),
                       }}
                     />
-                  </VStack>
+                    {birthdate.length == 0 || birthdate.length == 8 ? null : <Text fontSize={12} color="red.600">8자리를 입력해주세요.</Text>}
+                  </VStack>                  
                 </HStack>
                 <Text>휴대 전화 번호</Text>
                 <Input
@@ -238,7 +231,7 @@ function RegisterScreen({ navigation }) {
                   onChangeText={(value) => setPhonenumber(value)}
                   keyboardType="numeric"
                   variant="outline"
-                  placeholder="휴대 전화 번호  '-' 없이"
+                  placeholder="'-' 없이"
 
                   w="70%"
                   borderWidth={2}
@@ -290,35 +283,35 @@ function RegisterScreen({ navigation }) {
                     borderColor: "black",
                   }}
                 />
-                <Button
-
-                  disabled={false}
+                <Button                  
                   my={30}
                   w="287"
                   rounded={5}
-                  backgroundColor="black"
-                  onPress={handleRegistration
-                    //selectDB()
-                    //getImage()
-                    // console.log("id " + id)
-                    // console.log("pw " + pw)
-                    // console.log("name " + name)
-                    // console.log("nickname " + nickname)
-                    // console.log("birth " + birth)
+                  backgroundColor={ 
+                    (email.length > 0 && 
+                    password.length > 7 && 
+                    confirmPassword.length > 7 && 
+                    name.length > 0 &&
+                    nickname.length > 0 &&
+                    birthdate.length > 0 &&
+                    phonenumber > 0 &&
+                    address > 0 &&
+                    detailedaddress > 0
+                    ) 
+                    ? "black" : "gray.400"
                   }
+                  disabled={!(email.length > 0 && password.length > 7)}
+                  onPress={handleRegistration}
                 >
                   회원가입
                 </Button>
               </VStack>
-
-
-
             </View>
           </ScrollView>
-        </View>
-
 
       </TouchableWithoutFeedback>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </>
   );
 }
