@@ -1,11 +1,10 @@
 import { Modal, Content, Item, CheckIcon, Select, Radio, ScrollView, Box, Icon, NativeBaseProvider, Button, Heading, HStack, IconButton, Image, Input, Pressable, Text, View, VStack, Center, FormControl, useToast, toast } from "native-base";
 import React, { useState, useEffect } from 'react'
-import Colors from "../styles/colors";
+
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Keyboard, TouchableWithoutFeedback, Dimensions, ImageBackground } from "react-native";
 import { getFirestore, doc, setDoc, addDoc, serverTimestamp, getDoc, collection } from "firebase/firestore";
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
-import DropDownPicker from "react-native-dropdown-picker";
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { getStorage, ref, uploadString, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ToggleButton, } from 'react-native-paper';
@@ -123,7 +122,7 @@ function ProductRegisterScreen({ navigation }) {
    const auth = getAuth();
    const user = auth.currentUser;
 
-   useEffect(() => {
+   useEffect(() => {      
       const fetchUserInfo = async () => {
          const firestore = getFirestore();
          const userDocRef = doc(firestore, 'Users', user.uid); // 사용자ID에는 실제 사용자의 ID를 넣어야 합니다.
@@ -132,6 +131,7 @@ function ProductRegisterScreen({ navigation }) {
             const userData = userDocSnapshot.data();
             setUserInfo(userData);
          }
+         
       };
 
       fetchUserInfo();
@@ -139,6 +139,7 @@ function ProductRegisterScreen({ navigation }) {
    const sanitizeString = (value) => {
       return value.replace(/[\\/\.]/g, '').trim();
    };
+   
    const handleRegister = async () => {
       const firestore = getFirestore();
 
@@ -155,11 +156,30 @@ function ProductRegisterScreen({ navigation }) {
          console.log('모든 필드를 채워주세요.');
          return;
       }
-
+      const orderDate = new Date();
+      const updatedYear = orderDate.getFullYear();
+      const updatedMonth = orderDate.getMonth() + 1;
+      const updatedDay = orderDate.getDate();
+      const updatedHours = orderDate.getHours();
+      const updatedMinutes = orderDate.getMinutes();
+      const updatedSeconds = orderDate.getSeconds();
+      const formattedDate = `${updatedYear}${updatedMonth}${updatedDay}${updatedHours}${updatedMinutes}${updatedSeconds}`;
+      let DownDate
+      if (time === '24') {
+         const newDay = updatedDay + 1;
+         DownDate = Timestamp.fromDate(new Date(updatedYear, updatedMonth - 1, newDay, updatedHours, updatedMinutes, updatedSeconds));
+       } else if (time === '48') {
+         const newDay = updatedDay + 2;
+         DownDate = Timestamp.fromDate(new Date(updatedYear, updatedMonth - 1, newDay, updatedHours, updatedMinutes, updatedSeconds));
+       } else if (time === '72') {
+         const newDay = updatedDay + 3;
+         DownDate = Timestamp.fromDate(new Date(updatedYear, updatedMonth - 1, newDay, updatedHours, updatedMinutes, updatedSeconds));
+       }
+       
       try {
          const storage = getStorage();
          const downloadURLs = {};
-         const docName = sanitizeString(userInfo.name) + '_' + sanitizeString(title);
+         const docName = sanitizeString(userInfo.email) + sanitizeString(formattedDate);
          const collectionRef = collection(firestore, "Items");
          const docData = {
             title: title,
@@ -168,10 +188,13 @@ function ProductRegisterScreen({ navigation }) {
             time: time,
             method: clickedId,
             start_money: clickedId === "blind" ? 0 : start_money,
-            order: serverTimestamp(),
+            order: DownDate,
+            uptime:formattedDate,
             nickname: userInfo.nickname,
-            email:userInfo.email,
-            max_money: 0,
+            email: userInfo.email,
+            max_money: clickedId === "blind" ? parseInt(0) : parseInt(start_money),
+            downtime: serverTimestamp(),
+            onoff: true,
          };
          await Promise.all(
             images.map(async (image, index) => {
@@ -213,11 +236,13 @@ function ProductRegisterScreen({ navigation }) {
          setColor2("white");
          setImages([]);
          setfixValue("");
-         navigation.navigate("Board");
+
+         navigation.pop();
       } catch (err) {
          console.log("저장 실패", err);
       }
    }
+   
    const removeImage = (index) => {
       const updatedImages = [...images];
       updatedImages.splice(index, 1);
@@ -242,10 +267,13 @@ function ProductRegisterScreen({ navigation }) {
                         </Text>
                      </HStack>
                      <HStack flex={1} mr={3} alignItems="center" justifyContent="flex-end">
-                        <Button
-                           bg="black"
+                        <Button                           
+                           bg={!(!title || !category || !time || !description ||images.length === 0) ? "black" : "gray.400"}
                            _pressed={{bg:"gray.600"}}
-                           onPress={handleRegister}>
+                           onPress={handleRegister}
+                           disabled={(!title || !category || !time || !description || images.length === 0)}
+                           
+                           >
                            완료
                         </Button>
                      </HStack>                     

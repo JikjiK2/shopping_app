@@ -1,79 +1,85 @@
+
 import React, { useEffect, useState } from 'react';
 import { Dimensions, useWindowDimensions, RefreshControl } from 'react-native';
-import { Spinner, Fab, View, Icon, IconButton, Center, ScrollView, VStack, Pressable, Box, HStack, Image, Text, Spacer } from 'native-base';
-import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc ,addDoc ,where,query } from 'firebase/firestore';
+import { Spinner, Fab, View, Icon, IconButton, Center, ScrollView, VStack, Pressable, Box, HStack, Image, Text, Spacer, Row } from 'native-base';
+import { getFirestore, collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons, AntDesign } from "@expo/vector-icons";
 import { useIsFocused } from '@react-navigation/native';
+import {  AntDesign } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
-function SetItemsForms({ navigation }) {
+function JoinItemsForms({ navigation }) {
   const windowWidth = Dimensions.get('window').width;
   const windowHeight = Dimensions.get('window').height;
   const width = useWindowDimensions().width;
-
-  const [buttonData, setButtonData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [btnStyle, setBtn] = useState(true);
+  const [buttonData, setButtonData] = useState([]);
   const screenFocus = useIsFocused();
+  const [btnStyle, setBtn] = useState(true); 
   const [ loading, setLoading ] = useState(true);
 
   useEffect(()=>{
     let timer = setTimeout(()=>{ setLoading(false) }, 2000);
-  });  
+  });
 
-  const TextTime = (remainingTime) => {
-    var day = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
-    var hour = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
-    var min = Math.floor((remainingTime / (1000 * 60)) % 60);
-    var sec = Math.floor((remainingTime / 1000) % 60);
-    return day + "일 " + hour + "시간 " + min + "분 " + sec + "초";
-  }
-
-  const calculateRemainingTime = (order) => {
+  const formatDateTime = (order, time) => {
     const orderDate = order.toDate();
-    const now = new Date().getTime();
-    const remainingTime = Math.max(0, orderDate.getTime() - now);
+    if (time === '24') {
+      orderDate.setDate(orderDate.getDate() + 1);
+    } else if (time === '48') {
+      orderDate.setDate(orderDate.getDate() + 2);
+    } else if (time === '72') {
+      orderDate.setDate(orderDate.getDate() + 3);
+    }
 
-    var day = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
-    var hour = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
-    var min = Math.floor((remainingTime / (1000 * 60)) % 60);
-    var sec = Math.floor((remainingTime / 1000) % 60);
+    const updatedYear = orderDate.getFullYear();
+    const updatedMonth = orderDate.getMonth() + 1;
+    const updatedDay = orderDate.getDate();
+    const updatedHours = orderDate.getHours();
+    const updatedMinutes = orderDate.getMinutes();
 
-    // const plzTime = day + "일 " + hour + "시간 " + min + "분 " + sec + "초";
-    // return plzTime;
-    return remainingTime;
+    let updatedPeriod = "오전";
+    let updatedFormattedHours = updatedHours;
+    if (updatedHours >= 12) {
+      updatedPeriod = "오후";
+      updatedFormattedHours = updatedHours - 12;
+    }
+    if (updatedFormattedHours === 0) {
+      updatedFormattedHours = 12;
+    }
+
+    const formattedDate = `${updatedYear}년 ${updatedMonth}월 ${updatedDay}일`;
+    const formattedTime = `${updatedPeriod} ${updatedFormattedHours}시 ${updatedMinutes}분`;
+    const formattedDateTime = `${formattedDate} ${formattedTime}`;
+
+    return formattedDateTime;
   };
-
   const calculateUpdatedPrice = (maxMoney) => {
     const currentPrice = parseInt(maxMoney);
+    const increment = 1000; // Increment value
     if (isNaN(currentPrice)) {
       return maxMoney;
     }
     const updatedPrice = currentPrice;
+
     return updatedPrice;
-  };
-
-  const formatDateTime = (remainingTime) => {
-    let now = new Date().getTime();
-    const gap = remainingTime - now;
-
-    var day = Math.floor(gap / (1000 * 60 * 60 * 24));
-    var hour = Math.floor((gap / (1000 * 60 * 60)) % 24);
-    var min = Math.floor((gap / (1000 * 60)) % 60);
-    var sec = Math.floor((gap / 1000) % 60);
-
-    const formattedDateTime = day + "일 " + hour + "시간 " + min + "분 " + sec + "초";
-    return formattedDateTime;
+  }; 
+  const sanitizeString = (value) => {
+    return value.replace(/[\\/\.]/g, '').trim();
   };
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserInfo = async () => {
       const firestore = getFirestore();
-      const querySnapshot = await getDocs(query(collection(firestore, 'Items'), where('onoff', '==', true)));
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
 
+      const querySnapshot = await getDocs(
+        query(collection(firestore, 'Items'), where('email', '==', currentUser.email))
+      );
       const data = querySnapshot.docs.map((doc) => {
         const buttonData = doc.data();
-        const remainingTime = calculateRemainingTime(buttonData.order);
-        const formattedDateTime = formatDateTime(remainingTime);
+        const formattedDateTime = formatDateTime(buttonData.order, buttonData.time);
         const imageList = [];
         for (let i = 1; i <= 5; i++) {
           const imageLink = buttonData[`image${i}`];
@@ -84,71 +90,37 @@ function SetItemsForms({ navigation }) {
         return {
           ...buttonData,
           imageList: imageList,
-          remainingTime: remainingTime,
           formattedDateTime: formattedDateTime,
-          id: doc.id, // Include the document ID
-          onoff: buttonData.onoff,
         };
       });
-  
-      const expiredItems = data.filter((item) => item.remainingTime <= 0);
-      for (const item of expiredItems) {
-        // Set onoff to false for expired items
-        const itemRef = doc(firestore, "Items", item.id);
-        await setDoc(itemRef, { onoff: false }, { merge: true });
-      }
-  
+
       setButtonData(data);
     };
-  
-    if (screenFocus) {
-      fetchData();
-    }
-  }, [screenFocus]);
-  
- 
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setButtonData((prevData) => {
-        const newData = prevData.map((button) => {
-          const remainingTime = calculateRemainingTime(button.order);
-          const updatedPrice = calculateUpdatedPrice(button.max_money);
-  
-          return {
-            ...button,
-            remainingTime: remainingTime,
-            updatedPrice: updatedPrice,
-          };
-        });
-        return newData;
-      });
-    }, 1000);
-  
-    return () => clearInterval(interval);
-  }, [buttonData]);
-
-  const wait = (timeout) => {
-    return new Promise((resolve) => setTimeout(resolve, timeout));
-  };
+    fetchUserInfo();
+  }, []);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     wait(2000).then(() => setRefreshing(false));
   }, []);
 
-
   return (
     <SafeAreaProvider>
       <SafeAreaView flex={1}>
         <View flex={1}>
-          <View bg="white" alignItems="center" justifyContent="center">
-            <Text mt={4} fontSize={20} color="black" bold>
-              경매 리스트
+          <View py={1} bg="white" alignItems="center" justifyContent="space-between"  flexDirection="row">          
+          <IconButton _pressed={{ bg: "gray.100" }} icon={<Icon as={Ionicons} name="chevron-back" size="7" color="black" />}
+              onPress={() => navigation.pop()} />
+              <View>
+            <Text fontSize={20} color="black" bold>
+              판매 리스트
             </Text>
-            <View mt={4} bg="gray.200" h={0.5} w="full" />
+            </View>
+            <IconButton disabled icon={<Icon as={Ionicons} name="chevron-back" size="7" color="white" />}
+               />
           </View>
-          {loading ? <Center flex={1}><Spinner size="lg" color="black" /></Center> : 
+          <View bg="gray.200" h={0.5} w="full" />
+          {loading ? <Center flex={1}><Spinner size='lg' color="black"></Spinner></Center> : buttonData.length == 0 ? <Center flex={1}><Text fontSize={22}>판매 중인 물품이 없습니다.</Text></Center> :
           <ScrollView
             mt={0}
             onScroll={(e) => {
@@ -158,23 +130,16 @@ function SetItemsForms({ navigation }) {
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
           >
+           
             <View flex={1} justifyContent="center" alignItems="center">
               <VStack>
                 {buttonData.map((button, index) => {
                   const updatedPrice = calculateUpdatedPrice(button.max_money);
-                  const firestore = getFirestore();
                   return (
                     <Pressable
                       key={index} // Add a unique key to each Pressable component
                       width={windowWidth}
-                      onPress={async () => {
-                        // Update onoff to false for expired items when the button is pressed
-                        if (button.remainingTime <= 0) {
-                          const itemRef = doc(firestore, "Items", button.id);
-                          await setDoc(itemRef, { onoff: false }, { merge: true });
-                        }
-                        //console.log(buttonData.onoff)
-                        // Navigate to the desired screen
+                      onPress={() =>
                         navigation.navigate('Single', {
                           title: button.title,
                           nickname: button.nickname,
@@ -188,10 +153,8 @@ function SetItemsForms({ navigation }) {
                           start_money: button.start_money,
                           email: button.email,
                           uptime: button.uptime,
-                          onoff: button.onoff,
                         })
                       }
-                    }
                     >
                       {({ isHovered, isPressed }) => (
                         <View
@@ -220,7 +183,6 @@ function SetItemsForms({ navigation }) {
                               borderRadius={8}
                               borderWidth={1}
                               borderColor="gray.300"
-                              alt="image"
                             />
                             <VStack>
                               <Text fontWeight="medium" color="black" fontSize="18">
@@ -233,7 +195,7 @@ function SetItemsForms({ navigation }) {
                                 경매 시작가: {button.start_money}원
                               </Text>
                               <Text fontSize="sm" color="coolGray.700">
-                                남은 시간: {TextTime(button.remainingTime)} 
+                                남은 시간: {button.remainingTime} 
                               </Text>
                             </VStack>
                           </HStack>
@@ -247,13 +209,14 @@ function SetItemsForms({ navigation }) {
               </VStack>
             </View>
           </ScrollView>
-          }
-          {screenFocus ? (
+        }
+        {screenFocus ? (
             <Box position="relative" w="100%">
               <Fab
                 onPress={() => navigation.navigate('ProductR')}
                 _pressed={{ bg: 'gray.600' }}
-                p={4}                
+                p={4}
+                mb={buttonData.length == 0 ? 0 : windowHeight / 15}
                 bg="gray.800"
                 shadow={0}
                 position="absolute"
@@ -269,10 +232,11 @@ function SetItemsForms({ navigation }) {
               />
             </Box>
           ) : null}
+          
         </View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
-};
+}
 
-export default SetItemsForms;
+export default JoinItemsForms;

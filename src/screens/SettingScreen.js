@@ -1,14 +1,20 @@
-import { Modal, Image, Center, Heading, Text, View, VStack, Pressable, Box, IconButton, Icon, HStack, Button } from 'native-base'
+import { Modal, Text, View, VStack, IconButton, Icon, Button } from 'native-base'
 import React, { useState } from 'react'
-import Tabs from '../components/Profile/Tabs'
-import Colors from '../styles/colors'
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { getAuth } from 'firebase/auth'
+
 
 function SettingScreen({ navigation }) {
   const [showModal, setShowModal] = useState(false);
+
+  const handleLogout = () => {
+    const auth = getAuth();
+    auth()
+    .signOut()
+    .then(() => console.log('User signed out!'));
+  }  
+ 
   return (
     <SafeAreaProvider>
       <SafeAreaView flex={1} >

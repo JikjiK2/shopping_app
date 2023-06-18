@@ -1,30 +1,64 @@
-import { Button, Heading, HStack, IconButton, Image, Input, Pressable, Text, View, VStack, Center, FormControl, useToast, toast } from "native-base";
+import { Button, Heading, HStack, IconButton, Input, Text, View, VStack, useToast } from "native-base";
 import React, { useState, useEffect } from 'react'
-import Colors from "../styles/colors";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { Keyboard, TouchableWithoutFeedback } from "react-native";
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
+import { Keyboard, TouchableWithoutFeedback, BackHandler } from "react-native";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth'
+import { auth } from "../../../firebaseConfig";
 
 function LoginScreen({ navigation }) {
   const [show, setShow] = React.useState(false);
-  const [text, setText] = React.useState("");
   const [formData, setData] = React.useState({});
   const [errors, setErrors] = React.useState({});
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [bt, setBt] = useState();
   const toast = useToast();
-  
+
+  const [exitApp, setExitApp] = useState(0);
+  const backAction = () => {
+    setTimeout(() => {
+      setExitApp(0);
+    }, 2000);
+    if (exitApp === 0) {
+      setExitApp(exitApp + 1);
+      toast.show({
+        duration: 2000,
+        description: "'뒤로' 버튼을 한번 더 누르면 종료됩니다."
+      })
+    } else if (exitApp === 1) {
+      BackHandler.exitApp();
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+    return () => backHandler.remove();
+  });
+
+  useEffect(() => {
+    const auth = getAuth();
+    const user1 = auth.currentUser;
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('user is logged');
+        navigation.navigate("Bottom_Navi");
+      }      
+    });
+  }, []);
+
+
   const emailRegEx = /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/i;
   const passwordRegEx = /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{8,20}$/
-  
+
   const emailCheck = (username) => {
-    return emailRegEx.test(username); 
+    return emailRegEx.test(username);
   }
 
   const passwordCheck = (password) => {
-    return passwordRegEx.test(password); 
+    return passwordRegEx.test(password);
   }
 
   const handleClick = () => setShow(!show);
@@ -48,16 +82,17 @@ function LoginScreen({ navigation }) {
       })
       return;
     }
-    const auth = getAuth();
-    const firestore = getFirestore();
+    // const auth = getAuth();    
 
     signInWithEmailAndPassword(auth, email, password)
       .then(() => {
         toast.show({
           duration: 2000,
-          description: "로그인 성공!"
+          description: "환영합니다"
         })
-        navigation.navigate("Main");
+        navigation.navigate("Bottom_Navi");
+        setEmail("");
+        setPassword("");
       })
       .catch((error) => {
         toast.show({
@@ -77,7 +112,7 @@ function LoginScreen({ navigation }) {
         Keyboard.dismiss();
       }}
     >
-      <View flex={1} bg={Colors.white}>
+      <View flex={1} bg="white">
         <View
           w="full"
           h="full"
@@ -137,7 +172,7 @@ function LoginScreen({ navigation }) {
               type={show ? "text" : "password"}
               w="80%"
               py="0"
-              placeholder="비밀번호"            
+              placeholder="비밀번호"
               borderWidth={2}
               value={password}
               onChangeText={(value) => setPassword(value)}
@@ -148,13 +183,13 @@ function LoginScreen({ navigation }) {
             />
 
           </VStack>
-          <Button            
+          <Button
             my={30}
             w="80%"
             rounded={5}
-            backgroundColor={ (email.length > 0 && password.length > 7) ? "black" : "gray.400"}
+            backgroundColor={(email.length > 0 && password.length > 7) ? "black" : "gray.400"}
             disabled={!(email.length > 0 && password.length > 7)}
-            onPress={handleLogin}
+            onPress={() => { handleLogin(), Keyboard.dismiss() }}
           >
             로그인
           </Button>

@@ -3,11 +3,8 @@ import React, { useState, useEffect } from 'react'
 // import { getFirestore, doc, setDoc, addDoc, serverTimestamp, getDoc, collection } from "firebase/firestore";
 import { getStorage, ref, uploadString, uploadBytes, getDownloadURL } from "firebase/storage";
 import { where, getFirestore, doc, setDoc, addDoc, serverTimestamp, getDoc, collection, addDocument, getDocs, query } from "firebase/firestore";
-import Rating from '../components/Rating'
-import Colors from '../styles/colors'
-import NumericInput from 'react-native-numeric-input'
-import Review from '../components/Review'
-import { MaterialIcons , Ionicons } from "@expo/vector-icons";
+
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { SliderBox } from 'react-native-image-slider-box';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
@@ -21,7 +18,13 @@ const windowHeight = Dimensions.get('window').height;
 
 function SingleProductScreen({ navigation, route }) {
 
-  const { title, nickname, category, description, start_money, order, imageList } = route.params;
+  const { title, nickname, category, description, max_money, order, imageList, time, email, uptime, onoff } = route.params;
+  const [currentMaxMoney, setCurrentMaxMoney] = useState(max_money);
+
+  const [userInfo, setUserInfo] = React.useState(null);
+  const auth = getAuth();
+  const user = auth.currentUser; 
+
   const [value, setValue] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
@@ -53,13 +56,63 @@ function SingleProductScreen({ navigation, route }) {
     onOpen,
     onClose
   } = useDisclose();
+
+  const sanitizeString = (value) => {
+    return value.replace(/[\\/\.]/g, '').trim();
+  };
+
+  const handleBid = async () => {
+    console.log('max_money:', onoff);
+    const db = getFirestore();
+    const auth = getAuth();
+    const user = auth.currentUser;
+    const emailtable = user.email;
+    const productRef = doc(db, "Items", sanitizeString(email) + sanitizeString(uptime));
+    const newMaxMoney = parseInt(money);
+
+    if (isNaN(newMaxMoney)) {
+      console.error("Invalid max money value");
+
+      console.log('Fetched max money:', max_money);
+      return;
+    }
+
+    try {
+      await setDoc(productRef, { max_money: newMaxMoney }, { merge: true });
+
+      const actionCollectionRef = collection(productRef, "Action");
+      const userActionDocRef = doc(actionCollectionRef, sanitizeString(emailtable));
+      await setDoc(userActionDocRef, {
+        join_money: newMaxMoney,
+        // Add other fields as needed
+      });
+      setCurrentMaxMoney(newMaxMoney);
+      console.log("Max money updated successfully!");
+    } catch (error) {
+      console.error("Error updating max money:", error);
+    }
+
+  };
+
+  React.useEffect(() => {
+    const fetchUserInfo = async () => {
+      const firestore = getFirestore();
+      const userDocRef = doc(firestore, 'Users', user.uid);
+      const userDocSnapshot = await getDoc(userDocRef);
+      if (userDocSnapshot.exists()) {
+        const userData = userDocSnapshot.data();
+        setUserInfo(userData);
+      }
+    };
+  
+    fetchUserInfo();
+  }, [userInfo]);
   return (
     <>
       <SafeAreaProvider>
         <SafeAreaView flex={1} >
-          <View flex={1}>            
+          <View flex={1}>
             <ScrollView showsVerticalScrollIndicator={false}>
-            
               <SliderBox
                 images={imageList}
                 sliderBoxHeight={400}
@@ -69,9 +122,7 @@ function SingleProductScreen({ navigation, route }) {
                 imageLoadingColor="black"
               />
               <View padding={5}>
-
                 <HStack
-
                   alignItems="center"
                   space={2}
                 >
@@ -80,39 +131,47 @@ function SingleProductScreen({ navigation, route }) {
                   </Box>
                   <Text ml={2} fontSize={19}>{nickname}</Text>
                   <HStack flex={1} justifyContent="flex-end">
-                    <Button
-                      bg="black"
-                      disabled>
-                      경매 진행 중
-                    </Button>
-                    <View>
+                    {onoff ?
                       <Button
-                        bg="gray.300"
+                        bg="black"
                         disabled
+                        fontSize={21}
                       >
-                        <Text >경매종료</Text>
+                        <Text fontSize={17} color="white">경매 진행 중</Text>
                       </Button>
-
-                    </View>
+                      :
+                      <View>
+                        <Button
+                          bg="gray.300"
+                          disabled
+                        >
+                          <Text fontSize={17}>경매종료</Text>
+                        </Button>
+                      </View>
+                    }
                   </HStack>
                 </HStack>
                 <View mt={4} mb={4} style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ flex: 1, height: 1, backgroundColor: 'grey' }} />
                 </View>
                 <View padding={2}>
-                  <HStack>
+                  <HStack alignItems="center" justifyContent="space-between">
                     <Text bold fontSize={20}>{title}</Text>
                   </HStack>
-
                   <HStack mt={1} ml={2}>
-                    <Text mr={1} fontSize={12} color="grey">{category}</Text>
-                    <Text mr={1} fontSize={12} color="grey">·</Text>
-                    <Text fontSize={12} color="grey">{formattedDateTime}</Text>
+                    <Text mr={1} fontSize={14} color="grey">{category}</Text>
                   </HStack>
+                  <Text ml={1} mt={2} fontSize={16} color="black">종료 날짜: {formattedDateTime}</Text>
+                </View>
+                <View mt={4} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: 'grey' }} />
+                </View>
+                <View>
                   <Text
                     mt={4}
                     lineHeight={24}
-                    fontSize={12}
+                    fontSize={14}
+                    letterSpacing={0.2}
                   >
                     {description}
                   </Text>
@@ -136,9 +195,8 @@ function SingleProductScreen({ navigation, route }) {
                   onPress={
                     onOpen
                   }
-
-                  bg={Colors.black}
-                  color={Colors.white}
+                  bg={onoff ? "black" : "gray.300"}
+                  color="white"
                   w={windowWidth - 40}
                 >
                   입찰하기
@@ -150,11 +208,9 @@ function SingleProductScreen({ navigation, route }) {
                   }}
                 >
                   <Actionsheet isOpen={isOpen} onClose={onClose} >
-                    <Actionsheet.Content h={windowHeight-bottomSheet}>
+                    <Actionsheet.Content h={windowHeight - bottomSheet}>
                       <VStack mt={3} space={5}>
-
-                        <Text fontSize={20}>현재 소지 금액 : 1,000</Text>
-
+                      <Text fontSize={20}>현재 소지 금액: {userInfo && userInfo.cash.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</Text>
                         <Input
                           value={money} // 값 설정
                           onChangeText={(value) => setMoney(value)}
@@ -165,16 +221,16 @@ function SingleProductScreen({ navigation, route }) {
                           _focus={{
                             backgroundColor: "none",
                             borderColor: "black",
-                          }}                   
-                          onFocus={()=>setSheet(220)}
-                          onBlur={()=>setSheet(500)}      
+                          }}
+                          onFocus={() => setSheet(220)}
+                          onBlur={() => setSheet(500)}
                         />
                         <Button
                           onPress={
-                            () => setShowModal(true)
+                            () => { setShowModal(true) }
                           }
-                          bg={Colors.black}
-                          color={Colors.white}
+                          bg="black"
+                          color="white"
                           w={windowWidth - 40}
                         >
                           입찰하기
@@ -191,11 +247,11 @@ function SingleProductScreen({ navigation, route }) {
                       <View p={5}>
                         <Text fontSize={17}>입찰하시겠습니까?</Text>
                       </View>
-                    </Modal.Body>                    
+                    </Modal.Body>
                     <Modal.Footer bg="white">
                       <Button
-                        bg="white"                        
-                        onPress={() => { setShowModal(false)}}>
+                        bg="white"
+                        onPress={() => { setShowModal(false) }}>
                         <Text color="black">
                           취소
                         </Text>
@@ -203,18 +259,18 @@ function SingleProductScreen({ navigation, route }) {
                       <Button
                         ml={5}
                         bg="black"
-                        onPress={() => { setShowModal(false), onClose}}>
+                        onPress={() => { handleBid(), setShowModal(false), onClose() }}>
                         확인
                       </Button>
                     </Modal.Footer>
                   </Modal.Content>
                 </Modal>
               </HStack>
-              <View style={{backgroundColor: 'transparent', position: 'absolute', right: windowWidth-50, bottom: windowHeight-75, height: 50, width: 50}}
-              flexDirection="row" justifyContent="flex-start">
-              <IconButton icon={<Icon as={Ionicons} name="chevron-back" size="7" color="black" />}
-                onPress={() => navigation.pop()} />                
-            </View>
+              <View style={{ backgroundColor: 'transparent', position: 'absolute', right: windowWidth - 50, bottom: windowHeight - 75, height: 50, width: 50 }}
+                flexDirection="row" justifyContent="flex-start">
+                <IconButton _pressed={{ bg: "gray.200" }} icon={<Icon as={Ionicons} name="chevron-back" size="7" color="black" />}
+                  onPress={() => navigation.pop()} />
+              </View>
             </View>
           </View>
         </SafeAreaView>
@@ -222,6 +278,5 @@ function SingleProductScreen({ navigation, route }) {
     </>
   )
 }
-
 
 export default SingleProductScreen
