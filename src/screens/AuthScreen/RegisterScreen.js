@@ -262,6 +262,8 @@ function RegisterScreen({ navigation }) {
                     rounded={5}
                     backgroundColor={
                       !(
+                        !emailCheck(email) ||
+                        !passwordCheck(password) ||
                         !email ||
                         !password ||
                         !name ||
@@ -274,6 +276,8 @@ function RegisterScreen({ navigation }) {
                         ? "black" : "gray.400"
                     }
                     disabled={(
+                      !emailCheck(email) ||
+                      !passwordCheck(password) ||
                       !email ||
                       !password ||
                       !name ||

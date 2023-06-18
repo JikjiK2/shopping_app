@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dimensions, useWindowDimensions, RefreshControl } from 'react-native';
 import { Spinner, Fab, View, Icon, IconButton, Center, ScrollView, VStack, Pressable, Box, HStack, Image, Text, Spacer } from 'native-base';
-import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc ,addDoc ,where,query } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc, addDoc, where, query } from 'firebase/firestore';
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, AntDesign } from "@expo/vector-icons";
 import { useIsFocused } from '@react-navigation/native';
@@ -15,11 +15,11 @@ function SetItemsForms({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [btnStyle, setBtn] = useState(true);
   const screenFocus = useIsFocused();
-  const [ loading, setLoading ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    let timer = setTimeout(()=>{ setLoading(false) }, 2000);
-  });  
+  useEffect(() => {
+    let timer = setTimeout(() => { setLoading(false) }, 2000);
+  });
 
   const TextTime = (remainingTime) => {
     var day = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
@@ -68,7 +68,9 @@ function SetItemsForms({ navigation }) {
   useEffect(() => {
     const fetchData = async () => {
       const firestore = getFirestore();
-      const querySnapshot = await getDocs(query(collection(firestore, 'Items'), where('onoff', '==', true)));
+      const querySnapshot = await getDocs(
+        query(collection(firestore, "Items"), where("onoff", "==", true))
+      );
 
       const data = querySnapshot.docs.map((doc) => {
         const buttonData = doc.data();
@@ -90,23 +92,35 @@ function SetItemsForms({ navigation }) {
           onoff: buttonData.onoff,
         };
       });
-  
+
       const expiredItems = data.filter((item) => item.remainingTime <= 0);
       for (const item of expiredItems) {
         // Set onoff to false for expired items
         const itemRef = doc(firestore, "Items", item.id);
         await setDoc(itemRef, { onoff: false }, { merge: true });
+
+        const itemSnapshot = await getDoc(itemRef);
+        const actionEmail = itemSnapshot.id;
+        const joinMoney = itemSnapshot.get("join_money");
+
+        const userSnapshot = await getDocs(doc(firestore, "Users"));
+        userSnapshot.forEach((doc) => {
+          const userData = doc.data();
+          if (userData.email === actionEmail) {
+            userData.cash = userData.cash + joinMoney;
+          }
+        });
       }
-  
+
       setButtonData(data);
     };
-  
+
     if (screenFocus) {
       fetchData();
     }
   }, [screenFocus]);
-  
- 
+
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -114,7 +128,7 @@ function SetItemsForms({ navigation }) {
         const newData = prevData.map((button) => {
           const remainingTime = calculateRemainingTime(button.order);
           const updatedPrice = calculateUpdatedPrice(button.max_money);
-  
+
           return {
             ...button,
             remainingTime: remainingTime,
@@ -124,19 +138,13 @@ function SetItemsForms({ navigation }) {
         return newData;
       });
     }, 1000);
-  
+
     return () => clearInterval(interval);
   }, [buttonData]);
 
   const wait = (timeout) => {
     return new Promise((resolve) => setTimeout(resolve, timeout));
   };
-
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    wait(2000).then(() => setRefreshing(false));
-  }, []);
-
 
   return (
     <SafeAreaProvider>
@@ -148,112 +156,113 @@ function SetItemsForms({ navigation }) {
             </Text>
             <View mt={4} bg="gray.200" h={0.5} w="full" />
           </View>
-          {loading ? <Center flex={1}><Spinner size="lg" color="black" /></Center> : 
-          <ScrollView
-            mt={0}
-            onScroll={(e) => {
-              e.nativeEvent.contentOffset.y > 0 ? setBtn(false) : setBtn(true);
-            }}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          >
-            <View flex={1} justifyContent="center" alignItems="center">
-              <VStack>
-                {buttonData.map((button, index) => {
-                  const updatedPrice = calculateUpdatedPrice(button.max_money);
-                  const firestore = getFirestore();
-                  return (
-                    <Pressable
-                      key={index} // Add a unique key to each Pressable component
-                      width={windowWidth}
-                      onPress={async () => {
-                        // Update onoff to false for expired items when the button is pressed
-                        if (button.remainingTime <= 0) {
-                          const itemRef = doc(firestore, "Items", button.id);
-                          await setDoc(itemRef, { onoff: false }, { merge: true });
-                        }
-                        //console.log(buttonData.onoff)
-                        // Navigate to the desired screen
-                        navigation.navigate('Single', {
-                          title: button.title,
-                          nickname: button.nickname,
-                          category: button.category,
-                          order: button.order,
-                          time: button.time,
-                          description: button.description,
-                          start_money: button.start_money,
-                          imageList: button.imageList,
-                          max_money: button.max_money,
-                          start_money: button.start_money,
-                          email: button.email,
-                          uptime: button.uptime,
-                          onoff: button.onoff,
-                        })
-                      }
-                    }
-                    >
-                      {({ isHovered, isPressed }) => (
-                        <View
-                          m={0}
-                          bg={
-                            isPressed
-                              ? 'coolGray.100'
-                              : isHovered
-                              ? 'coolGray.100'
-                              : 'white'
+          {loading ? <Center flex={1}><Spinner size="lg" color="black" /></Center> :
+            <ScrollView
+              mt={0}
+              onScroll={(e) => {
+                e.nativeEvent.contentOffset.y > 0 ? setBtn(false) : setBtn(true);
+              }}
+            >
+              <View flex={1} justifyContent="center" alignItems="center">
+                <VStack>
+                  {buttonData.map((button, index) => {
+                    const updatedPrice = calculateUpdatedPrice(button.max_money);
+                    const firestore = getFirestore();
+                    return (
+                      <Pressable
+                        key={index}
+                        width={windowWidth}
+                        onPress={async () => {
+                          if (button.remainingTime <= 0) {
+                            const itemRef = doc(firestore, "Items", button.id);
+                            await setDoc(itemRef, { onoff: false }, { merge: true });
                           }
-                          pt={4}
-                          pb={4}
-                          pl={3}
-                          pr={3}
-                          borderTopColor="white"
-                          borderBottomColor="coolGray.300"
-                          borderBottomWidth={1}
-                          borderColor="coolGray.300"
-                        >
-                          <HStack space={3}>
-                            <Image
-                              source={{ uri: button.image1 }}
-                              w="120"
-                              h="120"
-                              borderRadius={8}
-                              borderWidth={1}
-                              borderColor="gray.300"
-                              alt="image"
-                            />
-                            <VStack>
-                              <Text fontWeight="medium" color="black" fontSize="18">
-                                {button.title}
-                              </Text>
-                              <Text bold fontSize="18" color="black">
-                                현재 최고가: {updatedPrice}원
-                              </Text>
-                              <Text mt="2" fontSize="sm" color="coolGray.700">
-                                경매 시작가: {button.start_money}원
-                              </Text>
-                              <Text fontSize="sm" color="coolGray.700">
-                                남은 시간: {TextTime(button.remainingTime)} 
-                              </Text>
-                            </VStack>
-                          </HStack>
-                          <Spacer />
-                        </View>
-                      )}
-                    </Pressable>
-                  );
-                })}
-                <View m={2}></View>
-              </VStack>
-            </View>
-          </ScrollView>
+                          navigation.navigate('Single', {
+                            title: button.title,
+                            nickname: button.nickname,
+                            category: button.category,
+                            order: button.order,
+                            time: button.time,
+                            description: button.description,
+                            start_money: button.start_money,
+                            imageList: button.imageList,
+                            max_money: button.max_money,
+                            start_money: button.start_money,
+                            email: button.email,
+                            uptime: button.uptime,
+                            onoff: button.onoff,
+                          });
+                        }}
+                      >
+                        {({ isHovered, isPressed }) => (
+                          <View
+                            m={0}
+                            bg={
+                              isPressed
+                                ? 'coolGray.100'
+                                : isHovered
+                                  ? 'coolGray.100'
+                                  : 'white'
+                            }
+                            pt={4}
+                            pb={4}
+                            pl={3}
+                            pr={3}
+                            borderTopColor="white"
+                            borderBottomColor="coolGray.300"
+                            borderBottomWidth={1}
+                            borderColor="coolGray.300"
+                          >
+                            <HStack space={3}>
+                              <Image
+                                source={{ uri: button.image1 }}
+                                w="120"
+                                h="120"
+                                borderRadius={8}
+                                borderWidth={1}
+                                borderColor="gray.300"
+                                alt="image"
+                              />
+                              <VStack>
+                                <Text fontWeight="medium" color="black" fontSize="18">
+                                  {button.title}
+                                </Text>
+                                {button.method === "blind" ? (
+                                  <Text bold fontSize="18" color="black">
+                                    Blind Auction
+                                  </Text>
+                                ) : (
+                                  <>
+                                    <Text bold fontSize="18" color="black">
+                                      현재 최고가: {updatedPrice}원
+                                    </Text>
+                                    <Text mt="2" fontSize="sm" color="coolGray.700">
+                                      경매 시작가: {button.start_money}원
+                                    </Text>
+                                  </>
+                                )}
+                                <Text fontSize="sm" color="coolGray.700">
+                                  남은 시간: {TextTime(button.remainingTime)}
+                                </Text>
+                              </VStack>
+                            </HStack>
+                            <Spacer />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                  <View m={2}></View>
+                </VStack>
+              </View>
+            </ScrollView>
           }
           {screenFocus ? (
             <Box position="relative" w="100%">
               <Fab
                 onPress={() => navigation.navigate('ProductR')}
                 _pressed={{ bg: 'gray.600' }}
-                p={4}                
+                p={4}
                 bg="gray.800"
                 shadow={0}
                 position="absolute"

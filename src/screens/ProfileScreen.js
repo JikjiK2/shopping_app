@@ -10,6 +10,7 @@ const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
 function ProfileScreen({ navigation }) {
+
   const [userInfo, setUserInfo] = React.useState(null);
   const auth = getAuth();
   const user = auth.currentUser;

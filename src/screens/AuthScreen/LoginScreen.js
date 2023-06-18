@@ -1,8 +1,8 @@
 import { Button, Heading, HStack, IconButton, Input, Text, View, VStack, useToast } from "native-base";
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { Keyboard, TouchableWithoutFeedback, BackHandler } from "react-native";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth'
+import { Keyboard, TouchableWithoutFeedback } from "react-native";
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from "../../../firebaseConfig";
 
 function LoginScreen({ navigation }) {
@@ -12,43 +12,6 @@ function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const toast = useToast();
-
-  const [exitApp, setExitApp] = useState(0);
-  const backAction = () => {
-    setTimeout(() => {
-      setExitApp(0);
-    }, 2000);
-    if (exitApp === 0) {
-      setExitApp(exitApp + 1);
-      toast.show({
-        duration: 2000,
-        description: "'뒤로' 버튼을 한번 더 누르면 종료됩니다."
-      })
-    } else if (exitApp === 1) {
-      BackHandler.exitApp();
-    }
-    return true;
-  };
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction,
-    );
-    return () => backHandler.remove();
-  });
-
-  useEffect(() => {
-    const auth = getAuth();
-    const user1 = auth.currentUser;
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log('user is logged');
-        navigation.navigate("Bottom_Navi");
-      }      
-    });
-  }, []);
-
 
   const emailRegEx = /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/i;
   const passwordRegEx = /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{8,20}$/

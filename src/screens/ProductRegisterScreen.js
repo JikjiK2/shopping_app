@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Keyboard, TouchableWithoutFeedback, Dimensions, ImageBackground } from "react-native";
-import { getFirestore, doc, setDoc, addDoc, serverTimestamp, getDoc, collection } from "firebase/firestore";
+import { getFirestore, doc, setDoc, addDoc, serverTimestamp, getDoc, collection, Timestamp } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { getStorage, ref, uploadString, uploadBytes, getDownloadURL } from "firebase/storage";

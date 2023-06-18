@@ -11,7 +11,7 @@ const windowHeight = Dimensions.get('window').height;
 
 function MoneyOutScreen({ navigation }) {
    const [showModal, setShowModal] = useState(false);
-   const [money, setMoney] = useState(null); // 글 제목
+   const [money, setMoney] = useState(null);
    const [fixvalue, setfixValue] = useState("");
 
    const handleButton = (newButton) => {

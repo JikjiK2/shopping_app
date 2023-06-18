@@ -1,4 +1,4 @@
-import { Button, Heading, IconButton, Input, View, VStack, Icon, Text, } from "native-base";
+import { Button, Heading, IconButton, Input, View, VStack, Icon, Text, useToast} from "native-base";
 import React, { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Keyboard, TouchableWithoutFeedback } from "react-native";
@@ -10,7 +10,7 @@ function IdSearchScreen({ navigation }) {
   const [name, setName] = useState("");
   const [phonenumber, setPhonenumber] = useState("");
   const [foundID, setFoundID] = useState([]);
-
+  const toast = useToast();
   //아이디를 찾는 함수 
   const handleIdSearch = async () => {
     try {
@@ -28,6 +28,12 @@ function IdSearchScreen({ navigation }) {
     if (foundID.length > 0) {
       navigation.navigate('ID_Result', { foundID });
     }
+    else{
+      toast.show({
+        duration:2000,
+        description: "입력된 정보가 잘못되었습니다."
+      })
+    }    
   };
 
   //화면 렌더링

@@ -1,4 +1,4 @@
-import { useDisclose, Actionsheet, Modal, Input, Image, Text, Box, ScrollView, HStack, NumberInput, Button, View, Icon, IconButton, VStack } from 'native-base'
+import { useDisclose, Actionsheet, Modal, Input, Image, Text, Box, ScrollView, HStack, NumberInput, Button, View, Icon, IconButton, VStack, useToast } from 'native-base'
 import React, { useState, useEffect } from 'react'
 // import { getFirestore, doc, setDoc, addDoc, serverTimestamp, getDoc, collection } from "firebase/firestore";
 import { getStorage, ref, uploadString, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -17,14 +17,13 @@ const windowHeight = Dimensions.get('window').height;
 
 
 function SingleProductScreen({ navigation, route }) {
-
+  const [userInfo, setUserInfo] = React.useState(null);
+  const auth = getAuth();
+  const user = auth.currentUser;
   const { title, nickname, category, description, max_money, order, imageList, time, email, uptime, onoff } = route.params;
   const [currentMaxMoney, setCurrentMaxMoney] = useState(max_money);
 
-  const [userInfo, setUserInfo] = React.useState(null);
-  const auth = getAuth();
-  const user = auth.currentUser; 
-
+  const toast = useToast();
   const [value, setValue] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
@@ -61,38 +60,6 @@ function SingleProductScreen({ navigation, route }) {
     return value.replace(/[\\/\.]/g, '').trim();
   };
 
-  const handleBid = async () => {
-    console.log('max_money:', onoff);
-    const db = getFirestore();
-    const auth = getAuth();
-    const user = auth.currentUser;
-    const emailtable = user.email;
-    const productRef = doc(db, "Items", sanitizeString(email) + sanitizeString(uptime));
-    const newMaxMoney = parseInt(money);
-
-    if (isNaN(newMaxMoney)) {
-      console.error("Invalid max money value");
-
-      console.log('Fetched max money:', max_money);
-      return;
-    }
-
-    try {
-      await setDoc(productRef, { max_money: newMaxMoney }, { merge: true });
-
-      const actionCollectionRef = collection(productRef, "Action");
-      const userActionDocRef = doc(actionCollectionRef, sanitizeString(emailtable));
-      await setDoc(userActionDocRef, {
-        join_money: newMaxMoney,
-        // Add other fields as needed
-      });
-      setCurrentMaxMoney(newMaxMoney);
-      console.log("Max money updated successfully!");
-    } catch (error) {
-      console.error("Error updating max money:", error);
-    }
-
-  };
 
   React.useEffect(() => {
     const fetchUserInfo = async () => {
@@ -107,6 +74,62 @@ function SingleProductScreen({ navigation, route }) {
   
     fetchUserInfo();
   }, [userInfo]);
+  const handleBid = async () => {
+    const db = getFirestore();
+    const auth = getAuth();
+    const user = auth.currentUser;
+    const emailtable = user.email;
+    const productRef = doc(db, "Items", sanitizeString(email) + sanitizeString(uptime));
+    const newMaxMoney = parseInt(money);
+  
+    if (isNaN(newMaxMoney)) {
+      console.log('Fetched max money:', max_money);
+      return;
+    }
+    if (newMaxMoney <= currentMaxMoney) {      
+      toast.show({
+        duration:2000,
+        description: "최고가보다 낮게 입찰하실 수 없습니다."
+      })
+      
+      return;
+    }
+  else{
+    try {
+      // Get the user's current cash amount
+      const currentUserRef = doc(db, "Users", user.uid);
+      const currentUserSnapshot = await getDoc(currentUserRef);
+      const currentUserData = currentUserSnapshot.data();
+      const currentCash = currentUserData.cash || 0;
+  
+      // Calculate the difference between the newMaxMoney and existing join_money
+      const actionCollectionRef = collection(productRef, "Action");
+      const userActionDocRef = doc(actionCollectionRef, sanitizeString(emailtable));
+      const userActionSnapshot = await getDoc(userActionDocRef);
+      const userActionData = userActionSnapshot.data();
+      const joinMoney = userActionData?.join_money || 0;
+      const difference = newMaxMoney - joinMoney;
+  
+      // Update the user's cash amount
+      const updatedCash = currentCash - difference;
+  
+      // Update the user's cash amount in the database
+      await setDoc(currentUserRef, { cash: updatedCash }, { merge: true });
+  
+      // Update the max_money field and join_money field in the action sub-collection
+      await setDoc(productRef, { max_money: newMaxMoney }, { merge: true });
+      await setDoc(userActionDocRef, { join_money: newMaxMoney }, { merge: true });
+  
+      setCurrentMaxMoney(newMaxMoney);
+      console.log("Max money and user's cash updated successfully!");
+    } catch (error) {
+      console.error("Error updating max money and user's cash:", error);
+    }
+  }
+  };
+
+
+
   return (
     <>
       <SafeAreaProvider>
@@ -210,7 +233,7 @@ function SingleProductScreen({ navigation, route }) {
                   <Actionsheet isOpen={isOpen} onClose={onClose} >
                     <Actionsheet.Content h={windowHeight - bottomSheet}>
                       <VStack mt={3} space={5}>
-                      <Text fontSize={20}>현재 소지 금액: {userInfo && userInfo.cash.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</Text>
+                        <Text fontSize={20}>현재 소지 금액: {userInfo && userInfo.cash.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</Text>
                         <Input
                           value={money} // 값 설정
                           onChangeText={(value) => setMoney(value)}

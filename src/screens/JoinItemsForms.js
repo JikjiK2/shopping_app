@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { Dimensions, useWindowDimensions, RefreshControl } from 'react-native';
+import { Dimensions, useWindowDimensions } from 'react-native';
 import { Spinner, View, Icon, IconButton, Center, ScrollView, VStack, Pressable, HStack, Image, Text, Spacer } from 'native-base';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useIsFocused } from '@react-navigation/native';
 
@@ -13,51 +13,49 @@ function JoinItemsForms({ navigation }) {
   const windowWidth = Dimensions.get('window').width;
   const windowHeight = Dimensions.get('window').height;
   const width = useWindowDimensions().width;
-  const [refreshing, setRefreshing] = useState(false);
   const [buttonData, setButtonData] = useState([]);
   const screenFocus = useIsFocused();
   const [btnStyle, setBtn] = useState(true);
-  const [ loading, setLoading ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    let timer = setTimeout(()=>{ setLoading(false) }, 2000);
+  useEffect(() => {
+    let timer = setTimeout(() => { setLoading(false) }, 2000);
   });
+  const TextTime = (remainingTime) => {
+    var day = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+    var hour = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
+    var min = Math.floor((remainingTime / (1000 * 60)) % 60);
+    var sec = Math.floor((remainingTime / 1000) % 60);
+    return day + "일 " + hour + "시간 " + min + "분 " + sec + "초";
+  }
 
-  const formatDateTime = (order, time) => {
+  const calculateRemainingTime = (order) => {
     const orderDate = order.toDate();
-    if (time === '24') {
-      orderDate.setDate(orderDate.getDate() + 1);
-    } else if (time === '48') {
-      orderDate.setDate(orderDate.getDate() + 2);
-    } else if (time === '72') {
-      orderDate.setDate(orderDate.getDate() + 3);
-    }
+    const now = new Date().getTime();
+    const remainingTime = Math.max(0, orderDate.getTime() - now);
 
-    const updatedYear = orderDate.getFullYear();
-    const updatedMonth = orderDate.getMonth() + 1;
-    const updatedDay = orderDate.getDate();
-    const updatedHours = orderDate.getHours();
-    const updatedMinutes = orderDate.getMinutes();
+    var day = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+    var hour = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
+    var min = Math.floor((remainingTime / (1000 * 60)) % 60);
+    var sec = Math.floor((remainingTime / 1000) % 60);
 
-    let updatedPeriod = "오전";
-    let updatedFormattedHours = updatedHours;
-    if (updatedHours >= 12) {
-      updatedPeriod = "오후";
-      updatedFormattedHours = updatedHours - 12;
-    }
-    if (updatedFormattedHours === 0) {
-      updatedFormattedHours = 12;
-    }
+    return remainingTime;
+  };
+  const formatDateTime = (remainingTime) => {
+    let now = new Date().getTime();
+    const gap = remainingTime - now;
 
-    const formattedDate = `${updatedYear}년 ${updatedMonth}월 ${updatedDay}일`;
-    const formattedTime = `${updatedPeriod} ${updatedFormattedHours}시 ${updatedMinutes}분`;
-    const formattedDateTime = `${formattedDate} ${formattedTime}`;
+    var day = Math.floor(gap / (1000 * 60 * 60 * 24));
+    var hour = Math.floor((gap / (1000 * 60 * 60)) % 24);
+    var min = Math.floor((gap / (1000 * 60)) % 60);
+    var sec = Math.floor((gap / 1000) % 60);
 
+    const formattedDateTime = day + "일 " + hour + "시간 " + min + "분 " + sec + "초";
     return formattedDateTime;
   };
   const calculateUpdatedPrice = (maxMoney) => {
     const currentPrice = parseInt(maxMoney);
-    const increment = 1000; // Increment value
+    const increment = 1000;
     if (isNaN(currentPrice)) {
       return maxMoney;
     }
@@ -92,10 +90,13 @@ function JoinItemsForms({ navigation }) {
                 imageList.push(imageLink);
               }
             }
-            const formattedDateTime = formatDateTime(buttonData.order, buttonData.time);
+            const remainingTime = calculateRemainingTime(buttonData.order);
+            const formattedDateTime = formatDateTime(remainingTime);
+
             const item = {
               ...buttonData,
               imageList: imageList,
+              remainingTime: remainingTime,
               formattedDateTime: formattedDateTime,
             };
             itemData.push(item);
@@ -105,12 +106,26 @@ function JoinItemsForms({ navigation }) {
       setButtonData(itemData);
     };
     fetchUserInfo();
-  }, []);
+  }, [screenFocus]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setButtonData((prevData) => {
+        const newData = prevData.map((button) => {
+          const remainingTime = calculateRemainingTime(button.order);
+          const updatedPrice = calculateUpdatedPrice(button.max_money);
 
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    wait(2000).then(() => setRefreshing(false));
-  }, []);
+          return {
+            ...button,
+            remainingTime: remainingTime,
+            updatedPrice: updatedPrice,
+          };
+        });
+        return newData;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [buttonData]);
 
   return (
     <SafeAreaProvider>
@@ -128,97 +143,109 @@ function JoinItemsForms({ navigation }) {
             />
           </View>
           <View bg="gray.200" h={0.5} w="full" />
-          
-          {loading ? <Center flex={1}><Spinner size="lg" color="black" /></Center> :
-          buttonData.length == 0 ? <Center flex={1}><Text fontSize={22}>참여 중인 경매가 없습니다.</Text></Center> :
-            <ScrollView
-              mt={0}
-              onScroll={(e) => {
-                e.nativeEvent.contentOffset.y > 0 ? setBtn(false) : setBtn(true);
-              }}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
-            >
 
-              <View flex={1} justifyContent="center" alignItems="center">
-                <VStack>
-                  {buttonData.map((button, index) => {
-                    const updatedPrice = calculateUpdatedPrice(button.max_money);
-                    return (
-                      <Pressable
-                        key={index} // Add a unique key to each Pressable component
-                        width={windowWidth}
-                        onPress={() =>
-                          navigation.navigate('Single', {
-                            title: button.title,
-                            nickname: button.nickname,
-                            category: button.category,
-                            order: button.order,
-                            time: button.time,
-                            description: button.description,
-                            start_money: button.start_money,
-                            imageList: button.imageList,
-                            max_money: button.max_money,
-                            start_money: button.start_money,
-                            email: button.email,
-                            uptime: button.uptime,
-                          })
-                        }
-                      >
-                        {({ isHovered, isPressed }) => (
-                          <View
-                            m={0}
-                            bg={
-                              isPressed
-                                ? 'coolGray.100'
-                                : isHovered
-                                  ? 'coolGray.100'
-                                  : 'white'
+          {loading ? <Center flex={1}><Spinner size="lg" color="black" /></Center> :
+            buttonData.length == 0 ? <Center flex={1}><Text fontSize={22}>참여 중인 경매가 없습니다.</Text></Center> :
+              <ScrollView
+                mt={0}
+                onScroll={(e) => {
+                  e.nativeEvent.contentOffset.y > 0 ? setBtn(false) : setBtn(true);
+                }}             
+              >
+
+                <View flex={1} justifyContent="center" alignItems="center">
+                  <VStack>
+                    {buttonData.map((button, index) => {
+                      const updatedPrice = calculateUpdatedPrice(button.max_money);
+                      tore = getFirestore();
+                      return (
+                        <Pressable
+                          key={index}
+                          width={windowWidth}
+                          onPress={async () => {
+                            if (button.remainingTime <= 0) {
+                              const itemRef = doc(firestore, "Items", button.id);
+                              await setDoc(itemRef, { onoff: false }, { merge: true });
                             }
-                            pt={4}
-                            pb={4}
-                            pl={3}
-                            pr={3}
-                            borderTopColor="white"
-                            borderBottomColor="coolGray.300"
-                            borderBottomWidth={1}
-                            borderColor="coolGray.300"
-                          >
-                            <HStack space={3}>
-                              <Image
-                                source={{ uri: button.image1 }}
-                                w="120"
-                                h="120"
-                                borderRadius={8}
-                                borderWidth={1}
-                                borderColor="gray.300"
-                              />
-                              <VStack>
-                                <Text fontWeight="medium" color="black" fontSize="18">
-                                  {button.title}
-                                </Text>
-                                <Text bold fontSize="18" color="black">
-                                  현재 최고가: {updatedPrice}원
-                                </Text>
-                                <Text mt="2" fontSize="sm" color="coolGray.700">
-                                  경매 시작가: {button.start_money}원
-                                </Text>
-                                <Text fontSize="sm" color="coolGray.700">
-                                  남은 시간: {button.remainingTime}
-                                </Text>
-                              </VStack>
-                            </HStack>
-                            <Spacer />
-                          </View>
-                        )}
-                      </Pressable>
-                    );
-                  })}
-                  <View m={2}></View>
-                </VStack>
-              </View>
-            </ScrollView>
+                            navigation.navigate('Single', {
+                              title: button.title,
+                              nickname: button.nickname,
+                              category: button.category,
+                              order: button.order,
+                              time: button.time,
+                              description: button.description,
+                              start_money: button.start_money,
+                              imageList: button.imageList,
+                              max_money: button.max_money,
+                              start_money: button.start_money,
+                              email: button.email,
+                              uptime: button.uptime,
+                              onoff: button.onoff,
+                            });
+                          }}
+                        >
+                          {({ isHovered, isPressed }) => (
+                            <View
+                              m={0}
+                              bg={
+                                isPressed
+                                  ? 'coolGray.100'
+                                  : isHovered
+                                    ? 'coolGray.100'
+                                    : 'white'
+                              }
+                              pt={4}
+                              pb={4}
+                              pl={3}
+                              pr={3}
+                              borderTopColor="white"
+                              borderBottomColor="coolGray.300"
+                              borderBottomWidth={1}
+                              borderColor="coolGray.300"
+                            >
+                              <HStack space={3}>
+                                <Image
+                                  source={{ uri: button.image1 }}
+                                  w="120"
+                                  h="120"
+                                  borderRadius={8}
+                                  borderWidth={1}
+                                  borderColor="gray.300"
+                                  alt="image"
+                                />
+                                <VStack>
+                                  <Text fontWeight="medium" color="black" fontSize="18">
+                                    {button.title}
+                                  </Text>
+                                  {button.method === "blind" ? (
+                                    <Text bold fontSize="18" color="black">
+                                      Blind Auction
+                                    </Text>
+                                  ) : (
+                                    <>
+                                      <Text bold fontSize="18" color="black">
+                                        현재 최고가: {updatedPrice}원
+                                      </Text>
+                                      <Text mt="2" fontSize="sm" color="coolGray.700">
+                                        경매 시작가: {button.start_money}원
+                                      </Text>
+                                    </>
+                                  )}
+                                  <Text fontSize="sm" color="coolGray.700">
+                                    남은 시간: {TextTime(button.remainingTime)}
+                                  </Text>
+                                </VStack>
+                              </HStack>
+                              <Spacer />
+                            </View>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                    <View m={2}></View>
+                  </VStack>
+                </View>
+              </ScrollView>
           }
         </View>
       </SafeAreaView>
